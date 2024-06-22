@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <string.h>
+#include <stdbool.h>
 
-#define VALUE 2545
+#define VALUE -2545
 #define HEX 16
 #define BINARY 2
 
@@ -39,6 +40,8 @@ void itob(int n, char str[], int b) {
     char temp[1000]; // empty string
     int remainder = 0;
     int i;
+    bool isNegative = n < 0;
+    if (isNegative) n = -n; // invert if negative
     for (i = 0; n > 0; i++, n /= b) {
         remainder = n % b;
         if (remainder >= 0 && remainder <= 9) {
@@ -47,7 +50,7 @@ void itob(int n, char str[], int b) {
             temp[i] = 65 + (remainder - 10);
         }
     }
-    temp[i] = '\n';
-    temp[++i] = '\0';
+    temp[i++] = '-';
+    temp[i] = '\0';
     reverse(temp, str);
 }
