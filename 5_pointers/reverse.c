@@ -26,8 +26,9 @@ void reverse(char *str) {
 
 int main(void) {
     char str[] = "yellow";
+    char *pointer = &str;
     printf("%s\n", str);
-    reverse(str);
+    reverse(pointer);
     printf("%s\n", str);
     return 0;
 }
