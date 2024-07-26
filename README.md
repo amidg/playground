@@ -1,2 +1,2 @@
-# cpp-playground
-Just a bunch of C++ codes to play. Practically useless.
+# playground
+Everything. Everywhere. All at once. Useless.
