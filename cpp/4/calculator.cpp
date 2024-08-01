@@ -6,18 +6,18 @@ double val2 = 0;
 char sign = ' ';
 
 template<typename T>
-void recordEntry(std::string text, T* var) {
+void recordEntry(std::string text, T& var) {
 	std::cout << text;
-	std::cin >> *var;
+	std::cin >> var;
     std::cout << std::endl;
 }
 
 
 int main(int argc, char* argv[]) {
 	// get operation
-	recordEntry<double>("Enter value 1: ", &val1);
-	recordEntry<double>("Enter value 2: ", &val2);
-	recordEntry<char>("Enter Operation +, -, *, /: ", &sign);
+	recordEntry<double>("Enter value 1: ", val1);
+	recordEntry<double>("Enter value 2: ", val2);
+	recordEntry<char>("Enter Operation +, -, *, /: ", sign);
 
 	// calculate the result
 	switch (sign) {
