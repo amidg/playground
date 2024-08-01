@@ -16,6 +16,10 @@ TARGET := main
 .PHONY: all clean
 all: $(TARGET)
 
+# Create build directory
+$(BUILDDIR):
+	mkdir -p $(BUILDDIR)
+
 # Linking
 $(TARGET): $(OBJFILES)
 	$(CXX) $(CXXFLAGS) $^ -o $(BUILDDIR)/$@
@@ -23,10 +27,7 @@ $(TARGET): $(OBJFILES)
 # Compilation
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cpp | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-
-# Create build directory
-$(BUILDDIR):
-	mkdir -p $(BUILDDIR)
+	#$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Clean target
 clean:
