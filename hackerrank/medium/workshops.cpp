@@ -1,6 +1,7 @@
-#include<bits/stdc++.h>
-
+#include <iostream>
 using namespace std;
+#include <vector>
+#include <algorithm>
 
 //Define the structs Workshops and Available_Workshops.
 //Implement the functions initialize and CalculateMaxWorkshops
@@ -15,6 +16,14 @@ typedef struct Available_Workshop {
     Workshop *workshops; // technically a pointer
 } Available_Workshops;
 
+inline bool operator<(const Workshop& lhs, const Workshop& rhs) {
+    return (lhs.end_time <= rhs.start_time);
+}
+
+inline bool operator>(const Workshop& lhs, const Workshop& rhs) {
+    return (lhs.start_time >= rhs.end_time);
+}
+
 Available_Workshops* initialize(int start_times[], int duration[], int n) {
     Available_Workshops* workshops = new Available_Workshops; // static so that actual memory space does not go out of scope
     workshops->n = n;
@@ -28,16 +37,26 @@ Available_Workshops* initialize(int start_times[], int duration[], int n) {
 }
 
 int CalculateMaxWorkshops(Available_Workshops* ptr) {
-    int max_shops = 1;
-    int last = 0; // index
+    std::vector<Workshop> good = {ptr->workshops[0]};
+    bool is_good = true;
+    Workshop temp;
     for (int i = 1; i < ptr->n; i++) {
-        if (ptr->workshops[i].start_time >= ptr->workshops[last].end_time || ptr->workshops[i].end_time <= ptr->workshops[last].start_time) {
-            max_shops++;
-            last = i;
+        is_good = true;
+        temp = ptr->workshops[i];
+        for (auto j = good.begin(); j != good.end(); j++) { // gonna be O(N^2) anyway?
+            if ( (temp.start_time >= (*j).start_time && temp.start_time <= (*j).end_time) ||
+                 (temp.end_time >= (*j).start_time && temp.end_time <= (*j).end_time) ||
+                 (temp.start_time == (*j).start_time || temp.end_time == (*j).end_time) ){
+                is_good = false;
+                break;
+            } 
         }
+        if (is_good)
+            good.push_back(temp);
     }
-    
-    return max_shops;
+    //for (auto& i : good)
+    //    std::cout << i.start_time << " " << i.duration << std::endl;
+    return good.size();
 }
 
 int main(int argc, char *argv[]) {
