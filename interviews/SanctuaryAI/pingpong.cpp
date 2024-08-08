@@ -29,8 +29,9 @@ public:
 
     // thread functions
     void ping() {
-        bool* isPingLocal = &isPing;
+        bool* isPingLocal;
         for (int i = 0; i < 10; i++) {
+            isPingLocal = &isPing;
             std::unique_lock<std::mutex> lock(mtx);
             cv.wait(lock, [=]{ return *isPingLocal; });
             buffer[size++] = "ping";
@@ -38,12 +39,15 @@ public:
             //std::cout << buffer[size-1] << std::endl;
             cv.notify_all();
         }
+        std::unique_lock<std::mutex> lock(mtx);
         isPingDone = true;
+        cv.notify_all();
     }
 
     void pong() {
-        bool* isPingLocal = &isPing;
+        bool* isPingLocal;
         for (int i = 0; i < 10; i++) {
+            isPingLocal = &isPing;
             std::unique_lock<std::mutex> lock(mtx);
             cv.wait(lock, [=]{ return !(*isPingLocal); });
             buffer[size++] = "pong";
@@ -51,7 +55,9 @@ public:
             //std::cout << buffer[size-1] << std::endl;
             cv.notify_all();
         }
+        std::unique_lock<std::mutex> lock(mtx);
         isPongDone = true;
+        cv.notify_all();
     }
 
     void print() {
