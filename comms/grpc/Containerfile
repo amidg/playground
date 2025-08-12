@@ -1,0 +1,21 @@
+FROM ghcr.io/amidg/developer:latest AS base
+
+# install gRPC dependencies
+RUN apt update -y && \
+    apt install -qqy build-essential autoconf libtool pkg-config
+
+# https://grpc.io/docs/languages/cpp/quickstart/
+ENV GRPC_INSTALL_DIR=/opt/grpc
+RUN mkdir -p $GRPC_INSTALL_DIR
+WORKDIR /tmp
+RUN git clone --recurse-submodules -b v1.74.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+WORKDIR /tmp/grpc
+RUN mkdir -p cmake/build && \
+    cd cmake/build && \
+    cmake -DgRPC_INSTALL=ON \
+          -DgRPC_BUILD_TESTS=OFF \
+          -DCMAKE_CXX_STANDARD=17 \
+          -DCMAKE_INSTALL_PREFIX=$GRPC_INSTALL_DIR \
+          ../.. && \
+    make -j$(nproc) && \
+    make install
