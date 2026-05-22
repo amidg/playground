@@ -1,4 +1,5 @@
-FROM ghcr.io/amidg/developer:latest AS base
+# build
+FROM ghcr.io/amidg/developer:latest AS grpc-builder
 
 # install gRPC dependencies
 RUN apt update -y && \
@@ -19,3 +20,9 @@ RUN mkdir -p cmake/build && \
           ../.. && \
     make -j$(nproc) && \
     make install
+
+
+# grpc-dev
+FROM 192.168.0.199:5000/grpc:dev AS dev
+RUN apt update -y
+RUN echo "export CMAKE_PREFIX_PATH=/opt/grpc" >> ~/.bashrc
