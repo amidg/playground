@@ -1,75 +1,36 @@
 ## Problem 1 — SPSC Lock-Free Ring Buffer
 
-### Background
+### Description
+The sensor fusion pipeline publishes IMU frames at 1 kHz from a real-time thread. A non-RT logging thread consumes them. A mutex is forbidden on the RT path. Implement a lock-free SPSC ring buffer that is safe without any locking primitives.
 
-You are building the inter-thread transport layer for a robot's control stack. A hardware
-acquisition thread reads joint states from a servo drive over EtherCAT at 1kHz and needs to
-hand those readings to a planning thread running at ~100Hz. The two threads run on different
-CPU cores. The acquisition thread has hard real-time constraints and must never block, sleep, or
-allocate memory at runtime. The planning thread can tolerate the occasional dropped sample —
-what it cannot tolerate is reading a partially-written or corrupted joint state.
+### Core Objective
+Implement `SPSCRingBuffer<T, N>` using only `std::atomic` and a power-of-two-sized fixed array. The producer and consumer run on separate threads with no shared mutex.
 
-### Your Task
-
-Implement a fixed-capacity, lock-free, single-producer single-consumer (SPSC) ring buffer as a
-C++ class template.
-
-### Interface
-
-```cpp
-template <typename T, std::size_t Capacity>
-class SPSCQueue {
-public:
-    // Returns true if the item was enqueued.
-    // Returns false if the buffer is full — never blocks, never allocates.
-    bool push(const T& item) noexcept;
-
-    // Returns the oldest item if one is available, std::nullopt otherwise.
-    [[nodiscard]] std::optional<T> pop() noexcept;
-};
-```
+### Permitted Interfaces / Libraries
+- C++20 standard library: `<atomic>`, `<array>`, `<optional>`, `<cstddef>`
+- No `std::mutex`, `std::condition_variable`, `std::lock_guard`, or any blocking primitive
+- No heap allocation after construction
+- Compiler: `g++ -std=c++20 -Wall -Wextra -pthread -fsanitize=thread`
 
 ### Requirements
-
-- `Capacity` is a non-type template parameter — not a constructor argument. The internal storage
-  must be `std::array<T, Capacity>`, not `std::vector`.
-- `push` and `pop` contain no mutexes, no condition variables, no system calls.
-- Zero heap allocation after the object is constructed.
-- Safe to call `push` from one thread and `pop` from a different thread simultaneously — no
-  other concurrent access pattern is supported or required.
-- You must explicitly handle the full/empty ambiguity. State your approach in a comment.
-- The write index and read index must not share a cache line.
+1. Template parameters: element type `T` and capacity `N` (must be a power of two; enforce with `static_assert`).
+2. `bool push(const T& item)` — called by producer only. Returns `false` (drops) if the buffer is full. Must never block.
+3. `std::optional<T> pop()` — called by consumer only. Returns `std::nullopt` if empty. Must never block.
+4. `size_t size() const` — approximate, non-atomic read for diagnostics only.
+5. All atomic loads on the consumer side use `memory_order_acquire`; all stores on the producer side use `memory_order_release`. Document why in a code comment on each load/store.
+6. The head/tail indices wrap naturally via modulo with the power-of-two mask.
 
 ### Acceptance Criteria
+- [ ] Compiles cleanly with `-fsanitize=thread`, zero warnings, zero ThreadSanitizer errors.
+- [ ] `static_assert` fires when N is not a power of two (e.g., N=3).
+- [ ] Single-threaded: push N items, pop N items, verify FIFO order.
+- [ ] Single-threaded: push N+1 items into a capacity-N buffer — the (N+1)th push returns `false`.
+- [ ] Multithreaded test: producer pushes 100,000 monotonically increasing integers; consumer pops all; verifies no gaps, no duplicates, correct ordering of received items.
+- [ ] A `main()` that runs both single-threaded and multithreaded tests and prints PASS/FAIL.
 
-| Scenario | Expected result |
-|---|---|
-| Push 5 items into a Capacity=8 queue | All return `true` |
-| Push until full, then push one more | Last `push` returns `false`; no crash; no UB |
-| `pop` from empty queue | Returns `std::nullopt` |
-| Push N items then pop N items | Items returned in FIFO order, values exact |
-| Concurrent push and pop under load | No torn values; no lost index updates |
-
-### What Will Be Evaluated
-
-Beyond correctness, be prepared to explain:
-- Why `memory_order_acquire` / `memory_order_release` are sufficient here and `seq_cst` is not
-  required (or justify if you used `seq_cst`)
-- What happens in the cache coherence protocol if both indices share a cache line
-- Why `Capacity` must be a power of two if you use bitmask wraparound, and what breaks if it is
-  not
-- How you resolved the full/empty ambiguity and what the tradeoffs of other approaches are
-
-### Evaluation Hints (for Claude)
-
-Probe for:
-- `seq_cst` used without justification — ask what ordering is actually required at each
-  operation and why
-- `write_idx` and `read_idx` declared adjacent without `alignas(64)` — this is false sharing;
-  ask the candidate to describe what happens in the MESI protocol
-- Full/empty ambiguity unaddressed — `write == read` means both empty and full in a naive
-  implementation; the candidate must state which technique they used
-- Modulo for wraparound (`% Capacity`) — valid but slower; if bitmask is used, ask what
-  constraint on `Capacity` makes it correct
-- `std::mutex` anywhere — ask what happens if the mutex is held exactly when the RT deadline
-  fires
+### Evaluation Hints (Claude Code only)
+- Run the multithreaded test 10 times; any TSAN hit or ordering violation across runs is a fail.
+- Check that `memory_order_relaxed` is **not** used on head/tail loads in push/pop (should be acquire/release).
+- Verify `static_assert(N && (N & (N-1)) == 0)` or equivalent is present.
+- Grep for `mutex`, `lock`, `condition_variable` — any hit in the implementation is a fail.
+- The consumer thread must receive exactly 100,000 items in order.
