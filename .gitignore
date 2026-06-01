@@ -47,3 +47,7 @@ dkms.conf
 build
 sdkconfig
 .cache
+
+# this particular codebase
+solution
+dissection
