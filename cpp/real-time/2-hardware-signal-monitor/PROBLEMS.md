@@ -2,15 +2,11 @@
 
 ### Background
 
-A humanoid robot's safety system requires a component that continuously checks a set of hardware
-signals against configured thresholds and maintains a system health state. Signals include joint
-torques, motor temperatures, and supply voltages — all represented as floats. The monitor runs
-on the real-time thread at 1kHz alongside the control loop. A non-RT monitoring thread reads the
-current state at ~10Hz to update a dashboard.
+A humanoid robot's safety system requires a component that continuously checks a set of hardware signals against configured thresholds and maintains a system health state. Signals include joint torques, motor temperatures, and supply voltages — all represented as floats.
 
-When something goes wrong, the system must fail safe. A monitor that throws an exception or
-silently ignores a fault is more dangerous than one that aggressively transitions to a fault
-state and stays there.
+The monitor runs on the real-time thread at 1kHz alongside the control loop. A non-RT monitoring thread reads the current state at ~10Hz to update a dashboard.
+
+When something goes wrong, the system must fail safe. A monitor that throws an exception or silently ignores a fault is more dangerous than one that aggressively transitions to a fault state and stays there.
 
 ### Your Task
 
@@ -61,8 +57,7 @@ public:
 ### Requirements
 
 - `N` is a compile-time template parameter. All storage is `std::array` — no heap.
-- `update()` is `noexcept`. If any invariant is violated inside, transition to FAULT; never
-  throw.
+- `update()` is `noexcept`. If any invariant is violated inside, transition to FAULT; never throw.
 - `state()` is safe to call from a non-RT thread without taking any lock. Justify your
   synchronization choice in a comment.
 - No `std::string` in any path called at 1kHz.
@@ -86,20 +81,14 @@ Beyond correctness, be prepared to explain:
 - Why `state()` can be read from another thread without a mutex — what type guarantees this
 - What `noexcept` on `update()` means at the ABI level and what the runtime does if an
   exception propagates through it anyway
-- Why the destructor sets FAULT before cutting power — what failure mode does the opposite order
-  create
+- Why the destructor sets FAULT before cutting power — what failure mode does the opposite order create
 - Why `std::function` is unsuitable for a callback registered on this class
 
 ### Evaluation Hints (for Claude)
 
 Probe for:
-- `state_` not `std::atomic` — reading from a non-RT thread without atomics is a data race even
-  if each individual read looks safe; ask the candidate to confirm this
-- Destructor cuts power before transitioning to FAULT — ask what state the system is left in if
-  something reads the state between power-cut and FAULT transition
-- `update()` that can throw — ask what `std::terminate` does to a running robot and when it
-  would be called here
-- `std::function` used for callback — ask at what capture size the SBO optimization fails and
-  heap allocation begins
-- State transition using a plain read-modify-write on a non-atomic — this is a data race; ask
-  the candidate what `compare_exchange_strong` does differently
+- `state_` not `std::atomic` — reading from a non-RT thread without atomics is a data race even if each individual read looks safe; ask the candidate to confirm this
+- Destructor cuts power before transitioning to FAULT — ask what state the system is left in if something reads the state between power-cut and FAULT transition
+- `update()` that can throw — ask what `std::terminate` does to a running robot and when it would be called here
+- `std::function` used for callback — ask at what capture size the SBO optimization fails and heap allocation begins
+- State transition using a plain read-modify-write on a non-atomic — this is a data race; ask the candidate what `compare_exchange_strong` does differently

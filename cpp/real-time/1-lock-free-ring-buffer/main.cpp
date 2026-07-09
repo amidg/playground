@@ -20,6 +20,10 @@ public:
     // Think about making it non-movable and non-copyable
     // Do I need to follow rule of 0/3/5
 
+    // producer thread is the one that owns the head index
+    // it is the only thing that modifies it
+    // This means that we can use relaxed ordering because only push ever modifies it
+    // at the same time tail needs to be atomically read, thus we need to acquire it
     [[nodiscard]] bool push(const T& item) {
         const size_t head = new_push_idx_.load(std::memory_order_relaxed);
         const size_t tail = next_read_idx_.load(std::memory_order_acquire);
