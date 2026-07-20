@@ -1,4 +1,4 @@
-## Problem 6 - RAII
+## Problem 7 - State Machine
 
 ### Description
 The Foundations team needs a lightweight component that aggregates heterogeneous hardware signals (joint temperatures, bus voltages, loop timing), compares each against a threshold, and maintains a simple FSM with three states: `NOMINAL`, `WARNING`, and `FAULT`. This maps directly to the "State Monitor Design" scenario described in your interview prep.
